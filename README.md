@@ -1,1 +1,147 @@
 # network-scanner
+
+Your Python script is a straightforward network scanner that:
+
+* Accepts an IP address or domain name,
+* Resolves domain names to IP addresses,
+* Pings the host to check if it’s alive,
+* Scans a list of common ports to see which ones are open,
+* Prints the results.
+
+
+
+
+On Windows (CMD or PowerShell)
+
+git clone https://github.com/naveenyadav369/network-scanner.git
+cd network-scanner
+python scanner.py
+---
+
+### Quick Review & Suggestions:
+
+1. **Ping Handling:**
+
+   * Works well cross-platform using `ping -n` (Windows) or `-c` (Linux/macOS).
+   * You correctly check for "unreachable" in ping output and handle exceptions.
+
+2. **Port Scanning:**
+
+   * Uses `socket.connect_ex` with a timeout for quick port scanning.
+   * Closes the socket after each attempt to avoid resource leaks.
+
+3. **Domain Resolution:**
+
+   * Uses `socket.gethostbyname()` to resolve domains.
+
+4. **User Interaction:**
+
+   * Good prompting for whether to continue if ping fails.
+
+---
+
+### Potential Improvements:
+
+1. **Better Host IP Validation:**
+
+Right now, this code treats any input consisting only of digits and dots as an IP:
+
+```python
+if all(c.isdigit() or c == '.' for c in target):
+    ip = target
+```
+
+This can misclassify invalid IPs. Consider using `ipaddress` module for robust IP validation:
+
+```python
+import ipaddress
+
+def is_valid_ip(ip):
+    try:
+        ipaddress.ip_address(ip)
+        return True
+    except ValueError:
+        return False
+```
+
+Then replace your check with:
+
+```python
+if is_valid_ip(target):
+    ip = target
+else:
+    # resolve domain
+```
+
+---
+
+2. **Port Scan Parallelization:**
+
+Currently, ports are scanned sequentially which can be slow. Using threading or multiprocessing can speed up scans:
+
+```python
+import threading
+
+def scan_port(host, port, open_ports):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(0.5)
+    try:
+        if sock.connect_ex((host, port)) == 0:
+            open_ports.append(port)
+    except socket.error:
+        pass
+    finally:
+        sock.close()
+
+def scan_ports_parallel(host, ports):
+    open_ports = []
+    threads = []
+    for port in ports:
+        t = threading.Thread(target=scan_port, args=(host, port, open_ports))
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
+    return open_ports
+```
+
+---
+
+3. **Improved Output:**
+
+Add port service names (like FTP, SSH) to results to improve readability:
+
+```python
+PORTS_INFO = {
+    21: 'FTP',
+    22: 'SSH',
+    23: 'Telnet',
+    25: 'SMTP',
+    53: 'DNS',
+    80: 'HTTP',
+    110: 'POP3',
+    139: 'NetBIOS',
+    143: 'IMAP',
+    443: 'HTTPS',
+    445: 'Microsoft DS',
+    3389: 'Remote Desktop'
+}
+
+# Later in your print loop:
+for port in open_ports:
+    print(f"  Port {port} ({PORTS_INFO.get(port, 'Unknown')}) is open")
+```
+
+---
+
+4. **Run as Administrator Warning:**
+
+Note that ping and port scanning may require administrative privileges on some systems to function properly.
+
+---
+
+### Final Note
+
+Your script is solid for learning and small scans. For more advanced scanning, consider libraries like `scapy` or `nmap` bindings (`python-nmap`).
+
+If you want, I can help you refactor your script with these improvements! Would you like that?
