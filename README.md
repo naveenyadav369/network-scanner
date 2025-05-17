@@ -13,9 +13,7 @@ Your Python script is a straightforward network scanner that:
 
 On Windows (CMD or PowerShell)
 
-git clone https://github.com/naveenyadav369/network-scanner.git
-cd network-scanner
-python scanner.py
+git clone https://github.com/naveenyadav369/network-scanner.git && cd network-scanner && python scanner.py
 ---
 
 ### Quick Review & Suggestions:
